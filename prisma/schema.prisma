@@ -1,0 +1,98 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ------------------------------------------------------
+// Enums
+// ------------------------------------------------------
+
+enum UserRoleEnum {
+  USER
+  ADMIN
+}
+
+enum FoodOrderStatusEnum {
+  PENDING
+  CANCELED
+  DELIVERED
+}
+
+// ------------------------------------------------------
+// Models (PostgreSQL Tables)
+// ------------------------------------------------------
+
+model User {
+  id          String       @id @default(cuid()) // 🔑 Нано ID шиг авсаархан, санамсаргүй ID автоматаар үүснэ
+  email       String       @unique
+  password    String
+  phoneNumber String?
+  address     String?
+  role        UserRoleEnum @default(USER)
+  isVerified  Boolean      @default(false)
+  ttl         DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  // Relations
+  orders FoodOrder[]
+}
+
+model FoodCategory {
+  id           String   @id @default(cuid()) // 🔑 Prisma Studio дээр хоосон орхисон ч автоматаар NanoID шиг утга үүснэ
+  categoryName String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  foods Food[]
+}
+
+model Food {
+  id             String   @id @default(cuid()) // 🔑 Энд бас автоматаар санамсаргүй ID үүснэ
+  foodName       String
+  price          Float
+  image          String
+  ingredients    String
+  foodCategoryId String // 🔑 Түүнээс гадна харилцааны ID-г тодорхой нэрлэв (Foreign Key)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  foodCategory FoodCategory    @relation(fields: [foodCategoryId], references: [id], onDelete: Cascade)
+  orderItems   FoodOrderItem[]
+}
+
+// Энэ өмнө нь 'type' байсныг PostgreSQL-д зориулж тусдаа 'model' (table) болгов
+model FoodOrderItem {
+  id       String @id @default(cuid()) // 🔑 Энд бас cuid()
+  foodId   String
+  orderId  String
+  quantity Int
+
+  // Relations
+  food  Food      @relation(fields: [foodId], references: [id])
+  order FoodOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model FoodOrder {
+  id         String              @id @default(cuid()) // 🔑 Энд бас cuid()
+  userId     String
+  totalPrice Float
+  address    String?
+  status     FoodOrderStatusEnum @default(PENDING)
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+
+  // Relations
+  buyer User            @relation(fields: [userId], references: [id])
+  items FoodOrderItem[]
+}
