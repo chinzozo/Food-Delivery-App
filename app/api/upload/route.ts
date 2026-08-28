@@ -1,3 +1,4 @@
+// app/api/upload/route.ts
 import { put } from "@vercel/blob";
 import { NextResponse } from "next/server";
 
@@ -6,19 +7,35 @@ export async function POST(request: Request): Promise<NextResponse> {
     const { searchParams } = new URL(request.url);
     const filename = searchParams.get("filename");
 
-    if (!filename || !request.body) {
+    if (!filename) {
       return NextResponse.json(
-        { error: "Filename and file content are required" },
-        { status: 400 },
+        { error: "Filename is required" },
+        { status: 400 }
       );
     }
 
-    const blob = await put(filename, request.body, {
+    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    if (!token) {
+      return NextResponse.json(
+        { error: "Server storage token is missing" },
+        { status: 500 }
+      );
+    }
+
+    const arrayBuffer = await request.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    const blob = await put(filename, buffer, {
       access: "public",
+      token: token,
     });
 
     return NextResponse.json(blob);
-  } catch (error) {
-    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+  } catch (error: any) {
+    console.error("=== VERCEL BLOB UPLOAD ERROR ===", error);
+    return NextResponse.json(
+      { error: error?.message || "Upload failed" },
+      { status: 500 }
+    );
   }
 }

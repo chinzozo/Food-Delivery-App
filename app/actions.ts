@@ -42,7 +42,7 @@ export async function loginAction(formData: FormData) {
     // (Жишээ нь: Чиний админ имэйл 'admin@email.com' бол доорхийг өөрийнхөөрөө солиорой)
     const userRole =
       (user as any).role ||
-      (email === "btsolmon.mn@gmail.com" ? "ADMIN" : "USER");
+      (email === "chinz.mn@gmail.com" ? "ADMIN" : "USER");
 
     // 🔑 2. Одоо userRole-ийг токен руу шингээнэ
     const token = jwt.sign({ id: user.id, role: userRole }, JWT_SECRET, {
