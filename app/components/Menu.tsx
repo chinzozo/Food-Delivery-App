@@ -2,17 +2,29 @@ import { ProductCard, type Product } from "./ProductCard";
 import { prisma } from "@/lib/prisma";
 
 async function getMenuData() {
-  const categories = await prisma.foodCategory.findMany({
-    include: {
-      foods: true,
-    },
-  });
-  return categories;
+  try {
+    const categories = await prisma.foodCategory.findMany({
+      include: {
+        foods: true,
+      },
+    });
+    return categories;
+  } catch (error) {
+    console.error("Failed to fetch menu data from NeonDB:", error);
+    return [];
+  }
 }
 
-// 3. Компонентоо 'async' болгоно
 export async function Menu() {
   const sections = await getMenuData();
+
+  if (!sections || sections.length === 0) {
+    return (
+      <section className="bg-primary py-10 text-center text-white">
+        <p>Категори одоогоор байхгүй байна.</p>
+      </section>
+    );
+  }
 
   return (
     <section className="bg-primary">
@@ -21,21 +33,20 @@ export async function Menu() {
           <div
             key={section.id}
             id={section.categoryName}
-            className="flex flex-col gap-5 sm:gap-6 scroll-mt-24"
+            className="flex flex-col gap-5 scroll-mt-24 sm:gap-6"
           >
-            {/* Категорийн нэр (Манай бэкэндээс categoryName ирнэ) */}
-            <h2 className="text-[22px] sm:text-[30px] font-semibold leading-8 sm:leading-9 tracking-tight text-white">
+            <h2 className="text-[22px] font-semibold leading-8 tracking-tight text-white sm:text-[30px] sm:leading-9">
               {section.categoryName}
             </h2>
 
-            <div className="grid grid-cols-1 gap-5 sm:gap-9 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-9 lg:grid-cols-3">
               {section.foods.map((food) => {
                 const mappedProduct: Product = {
                   id: food.id,
                   name: food.foodName,
                   description:
                     food.ingredients || "Орц найрлага байхгүй байна.",
-                  price: `$${food.price.toFixed(2)}`, // Тоог $12.99 формат руу хөрвүүлэх
+                  price: `$${food.price.toFixed(2)}`,
                   image: food.image || "/placeholder.jpg",
                 };
 
