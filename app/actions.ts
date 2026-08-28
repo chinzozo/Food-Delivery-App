@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 
-
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { Resend } from "resend";
@@ -15,8 +14,12 @@ console.log("=== DEBUG RESEND KEY ===", apiKey ? `${apiKey.slice(0, 5)}... (Leng
 
 const resend = new Resend(apiKey);
 
-
-
+// Dynamic Base URL calculation (falls back gracefully between Vercel, explicit ENV, or local dev)
+const BASE_URL =
+  process.env.NEXT_PUBLIC_BASE_URL ||
+  (process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : "http://localhost:3000");
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const passwordRegex =
@@ -98,11 +101,6 @@ export async function registerAction(formData: FormData) {
   }
 
   try {
-    const headersList = await headers();
-    const host = headersList.get("host");
-    const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `${protocol}://${host}`;
-
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
@@ -127,7 +125,7 @@ export async function registerAction(formData: FormData) {
       from: "onboarding@resend.dev",
       to: email,
       subject: "Verify your email",
-      html: `<p>Click <a href="${baseUrl}/verify?email=${encodeURIComponent(email)}">here</a> to verify your account</p>`,
+      html: `<p>Click <a href="${BASE_URL}/verify?email=${encodeURIComponent(email)}">here</a> to verify your account</p>`,
     });
 
     if (sendError) {
@@ -150,11 +148,6 @@ export async function sendResetLinkAction(formData: FormData) {
   }
 
   try {
-    const headersList = await headers();
-    const host = headersList.get("host");
-    const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `${protocol}://${host}`;
-
     const user = await prisma.user.findUnique({
       where: { email },
     });
@@ -170,7 +163,7 @@ export async function sendResetLinkAction(formData: FormData) {
       html: `
         <h1>Reset your password</h1>
         <p>You requested a password reset. Click the link below to continue:</p>
-        <a href="${baseUrl}/reset-password?email=${encodeURIComponent(email)}">Reset Password</a>
+        <a href="${BASE_URL}/reset-password?email=${encodeURIComponent(email)}">Reset Password</a>
         <p>If you didn't request this, please ignore this email.</p>
       `,
     });
